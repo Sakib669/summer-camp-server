@@ -46,8 +46,10 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const usersCollection = client.db('summerCapmDB').collection('users');
+    const classesCollection = client.db('summerCapmDB').collection('classes');
+    const classesCartCollection = client.db('summerCapmDB').collection('classesCart');
 
-
+    // users and jwt api
     app.post('/jwt', (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
@@ -74,7 +76,18 @@ async function run() {
     })
 
 
+    // classes api
+    app.get('/classes', async (req, res) =>{
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    })
 
+    // classes Cart api
+    app.post('/classesCart', async (req, res) => {
+      const data = req.body;
+      const result = await classesCartCollection.insertOne(data);
+      res.send(result);
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
