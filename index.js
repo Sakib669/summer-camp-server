@@ -49,6 +49,38 @@ async function run() {
     const classesCollection = client.db('summerCapmDB').collection('classes');
     const classesCartCollection = client.db('summerCapmDB').collection('classesCart');
 
+    const verifyStudent = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if(user.role !== 'student'){
+        return res.status(403).send({ error: true, message: 'forbidden message by student' });
+      }
+      next();
+    }
+
+
+    const verifyInstructor = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if(user.role !== 'instructor'){
+        return res.status(403).send({ error: true, message: 'forbidden message by student' });
+      }
+      next();
+    }
+
+
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if(user.role !== 'admin'){
+        return res.status(403).send({ error: true, message: 'forbidden message by student' });
+      }
+      next();
+    }
+
     // users and jwt api
     app.post('/jwt', (req, res) => {
       const user = req.body;
@@ -73,6 +105,14 @@ async function run() {
     app.get('/users', async (req, res) => {
       const result = await usersCollection.find().toArray()
       res.send(result);
+    })
+
+    app.get('/user/student/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const data = await classesCartCollection.find(query).toArray();
+      console.log(data);
+      res.send(data);
     })
 
 
