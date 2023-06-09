@@ -114,7 +114,9 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const data = await classesCartCollection.find(query).toArray();
-      res.send(data);
+      if(data.length > 0) {
+        res.send(data);
+      }
     })
 
     // classes api
@@ -130,7 +132,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/classes-cart',  async (req, res) => {
+    app.get('/classes-cart', async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await classesCollection.find(query).toArray();
@@ -160,6 +162,11 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await classesCartCollection.findOne(query);
       res.send(result);
+    })
+
+    // admin api
+    app.get('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+      res.send({ role: 'admin' });
     })
 
     // payment api
