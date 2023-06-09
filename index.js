@@ -14,14 +14,14 @@ app.use(express.json());
 
 const verifyJWT = async (req, res, next) => {
   const authorization = await req.headers.authorization;
-  if (!authorization){
-    return res.status(401).send({error: true, message: 'unauthorized access by verifyJWT1'});
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: 'unauthorized access by verifyJWT1' });
   }
 
   const token = authorization.split(' ')[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if(err){
-      return res.status(401).send({error: true, message: 'unauthorized access by verifyJWT'});
+    if (err) {
+      return res.status(401).send({ error: true, message: 'unauthorized access by verifyJWT' });
     }
     req.decoded = decoded;
     next();
@@ -55,7 +55,7 @@ async function run() {
       const email = req.decoded.email;
       const query = { email: email };
       const user = await usersCollection.findOne(query);
-      if(user.role !== 'student'){
+      if (user.role !== 'student') {
         return res.status(403).send({ error: true, message: 'forbidden message by student' });
       }
       next();
@@ -66,7 +66,7 @@ async function run() {
       const email = await req.decoded.email;
       const query = { email: email };
       const user = await usersCollection.findOne(query);
-      if(user.role !== 'instructor'){
+      if (user.role !== 'instructor') {
         return res.status(403).send({ error: true, message: 'forbidden message by student' });
       }
       next();
@@ -77,7 +77,7 @@ async function run() {
       const email = req.decoded.email;
       const query = { email: email };
       const user = await usersCollection.findOne(query);
-      if(user.role !== 'admin'){
+      if (user.role !== 'admin') {
         return res.status(403).send({ error: true, message: 'forbidden message by student' });
       }
       next();
@@ -118,8 +118,8 @@ async function run() {
     })
 
     // classes api
-    app.get('/classes', async (req, res) =>{
-      const result = await classesCollection.find().toArray();
+    app.get('/classes', async (req, res) => {
+      const result = await classesCollection.find({ status: { $eq: 'approved' } }).toArray();
       res.send(result);
     })
 
@@ -139,9 +139,14 @@ async function run() {
 
     // instructors api
     app.get('/users/instructor/:email', verifyJWT, verifyInstructor, async (req, res) => {
-      res.send({role: 'instructor'});
+      res.send({ role: 'instructor' });
     })
 
+    app.post('/classes', async (req, res) => {
+      const data = req.body;
+      const result = await classesCollection.insertOne(data);
+      res.send(result);
+    })
 
     app.get('/classes-cart/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
@@ -166,7 +171,7 @@ async function run() {
       })
     })
 
-    app.get('/payment-details', verifyJWT, async (req, res) =>{
+    app.get('/payment-details', verifyJWT, async (req, res) => {
       const result = await paymentsCollection.find().toArray();
       res.send(result);
     })
@@ -174,7 +179,7 @@ async function run() {
     app.post('/payments', verifyJWT, async (req, res) => {
       const payment = req.body;
       const insertResult = await paymentsCollection.insertOne(payment);
-      const query = {_id : new ObjectId(payment._id)};
+      const query = { _id: new ObjectId(payment._id) };
       const deleteResult = await classesCartCollection.deleteOne(query);
       res.send({ insertResult, deleteResult });
     })
