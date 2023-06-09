@@ -12,10 +12,10 @@ app.use(express.json());
 
 
 
-const verifyJWT = (req, res, next) => {
-  const authorization = req.headers.authorization;
+const verifyJWT = async (req, res, next) => {
+  const authorization = await req.headers.authorization;
   if (!authorization){
-    return res.status(401).send({error: true, message: 'unauthorized access by verifyJWT'});
+    return res.status(401).send({error: true, message: 'unauthorized access by verifyJWT1'});
   }
 
   const token = authorization.split(' ')[1];
@@ -124,13 +124,13 @@ async function run() {
     })
 
     // classes Cart api
-    app.post('/classesCart', async (req, res) => {
+    app.post('/classes-cart', async (req, res) => {
       const data = req.body;
       const result = await classesCartCollection.insertOne(data);
       res.send(result);
     })
 
-    app.delete('/classesCart/:id', async (req, res) => {
+    app.delete('/classes-cart/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await classesCartCollection.deleteOne(query);
@@ -138,7 +138,7 @@ async function run() {
     })
 
 
-    app.get('/classesCart/:id', verifyJWT, async (req, res) => {
+    app.get('/classes-cart/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await classesCartCollection.findOne(query);
@@ -149,6 +149,7 @@ async function run() {
     app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
+      console.log(amount);
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: 'usd',
@@ -160,17 +161,17 @@ async function run() {
       })
     })
 
+    app.get('/payment-details', verifyJWT, async (req, res) =>{
+      const result = await paymentsCollection.find().toArray();
+      res.send(result);
+    })
+
     app.post('/payments', verifyJWT, async (req, res) => {
       const payment = req.body;
-      console.log(payment);
       const insertResult = await paymentsCollection.insertOne(payment);
       const query = {_id : new ObjectId(payment._id)};
-
-      // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-
-      // const deleteResult = await cartCollection.deleteMany(query)
-
-      // res.send({ insertResult, deleteResult });
+      const deleteResult = await classesCartCollection.deleteOne(query);
+      res.send({ insertResult, deleteResult });
     })
 
     await client.db("admin").command({ ping: 1 });
