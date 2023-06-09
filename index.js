@@ -63,7 +63,7 @@ async function run() {
 
 
     const verifyInstructor = async (req, res, next) => {
-      const email = req.decoded.email;
+      const email = await req.decoded.email;
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       if(user.role !== 'instructor'){
@@ -135,6 +135,11 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await classesCartCollection.deleteOne(query);
       res.send(result);
+    })
+
+    // instructors api
+    app.get('/users/instructor/:email', verifyJWT, verifyInstructor, async (req, res) => {
+      res.send({role: 'instructor'});
     })
 
 
