@@ -1,10 +1,11 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const app = express();
 const cors = require('cors');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -47,6 +48,7 @@ async function run() {
 
     const usersCollection = client.db('summerCapmDB').collection('users');
     const classesCollection = client.db('summerCapmDB').collection('classes');
+    const paymentsCollection = client.db('summerCapmDB').collection('payments');
     const classesCartCollection = client.db('summerCapmDB').collection('classesCart');
 
     const verifyStudent = async (req, res, next) => {
@@ -107,14 +109,13 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/user/student/:email', async (req, res) => {
+    // student api
+    app.get('/user/student/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const data = await classesCartCollection.find(query).toArray();
-      console.log(data);
       res.send(data);
     })
-
 
     // classes api
     app.get('/classes', async (req, res) =>{
@@ -127,6 +128,49 @@ async function run() {
       const data = req.body;
       const result = await classesCartCollection.insertOne(data);
       res.send(result);
+    })
+
+    app.delete('/classesCart/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await classesCartCollection.deleteOne(query);
+      res.send(result);
+    })
+
+
+    app.get('/classesCart/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await classesCartCollection.findOne(query);
+      res.send(result);
+    })
+
+    // payment api
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
+
+    app.post('/payments', verifyJWT, async (req, res) => {
+      const payment = req.body;
+      console.log(payment);
+      const insertResult = await paymentsCollection.insertOne(payment);
+      const query = {_id : new ObjectId(payment._id)};
+
+      // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+
+      // const deleteResult = await cartCollection.deleteMany(query)
+
+      // res.send({ insertResult, deleteResult });
     })
 
     await client.db("admin").command({ ping: 1 });
