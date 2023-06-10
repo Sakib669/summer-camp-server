@@ -115,6 +115,7 @@ async function run() {
       const query = { email: email };
       const data = await classesCartCollection.find(query).toArray();
       if (data.length > 0) {
+        data.role = 'student';
         res.send(data);
       }
     })
@@ -145,6 +146,17 @@ async function run() {
       const result = await classesCartCollection.deleteOne(query);
       res.send(result);
     })
+
+    app.patch('/classes-cart/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const update = { $inc: { availableSeats: -1, enrolled: 1 } };
+
+      const result = await classesCollection.findOneAndUpdate(query, update);
+      res.send(result);
+    });
+
+
 
     // instructors api
     app.get('/users/instructor/:email', verifyJWT, verifyInstructor, async (req, res) => {
@@ -188,7 +200,7 @@ async function run() {
     })
 
 
-    app.get('/all-classes-data', verifyJWT, verifyAdmin , async (req, res) => {
+    app.get('/all-classes-data', verifyJWT, verifyAdmin, async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     })
@@ -212,15 +224,10 @@ async function run() {
 
 
 
-
-
-
-
     // payment api
     app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
-      console.log(amount);
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: 'usd',
