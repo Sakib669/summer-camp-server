@@ -114,7 +114,7 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const data = await classesCartCollection.find(query).toArray();
-      if(data.length > 0) {
+      if (data.length > 0) {
         res.send(data);
       }
     })
@@ -167,6 +167,25 @@ async function run() {
     // admin api
     app.get('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
       res.send({ role: 'admin' });
+    })
+
+    app.get('/all-users-data', verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.patch('/all-users-data/', async (req, res) => {
+      const role = req.query.role;
+      const email = req.query.email;
+      console.log(role, email);
+      const filter = { email: email };
+      const updateDoc = {
+        $set: {
+          role: role
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
     })
 
     // payment api
