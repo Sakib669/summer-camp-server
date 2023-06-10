@@ -132,7 +132,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/classes-cart', async (req, res) => {
+    app.get('/classes-cart', verifyJWT, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await classesCollection.find(query).toArray();
@@ -177,7 +177,6 @@ async function run() {
     app.patch('/all-users-data/', async (req, res) => {
       const role = req.query.role;
       const email = req.query.email;
-      console.log(role, email);
       const filter = { email: email };
       const updateDoc = {
         $set: {
@@ -187,6 +186,35 @@ async function run() {
       const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
+
+
+    app.get('/all-classes-data', verifyJWT, verifyAdmin , async (req, res) => {
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.patch('/all-classes-data', async (req, res) => {
+      const feedback = req.query.feedback;
+      const status = req.query.status;
+      const id = req.query.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          feedback: feedback,
+          status: status
+        },
+      };
+      const result = await classesCollection.updateOne(filter, updateDoc);
+      return res.send(result);
+    })
+
+
+
+
+
+
+
+
 
     // payment api
     app.post('/create-payment-intent', async (req, res) => {
