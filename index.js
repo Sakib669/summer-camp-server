@@ -109,20 +109,29 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/teachers', async (req, res) => {
+      const result = await usersCollection.find({role: {$eq : 'instructor'}}).toArray();
+      res.send(result);
+    });
+
     // student api
-    app.get('/user/student/:email', verifyJWT, async (req, res) => {
+    app.get('/user/student/:email', verifyJWT, verifyStudent, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const data = await classesCartCollection.find(query).toArray();
-      if (data.length > 0) {
-        data.role = 'student';
-        res.send(data);
-      }
+      data.role = 'student';
+      return res.send(data);
     })
 
     // classes api
     app.get('/classes', async (req, res) => {
-      const result = await classesCollection.find({ status: { $eq: 'approved' } }).toArray();
+      const result = await classesCollection.find({ status: { $eq: 'approved' } }).sort({enrolled: 1}).toArray();
+      res.send(result);
+    })
+
+    app.get('/classes/banner2', async (req, res) => {
+      const query = {enrolled: {$gt: 5}, status: {$eq : 'approved'}};
+      const result = await classesCollection.find(query).sort({enrolled: 1}).limit(6).toArray();
       res.send(result);
     })
 
@@ -169,7 +178,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/classes-cart/:id', verifyJWT, async (req, res) => {
+    app.get('/classes-cart/:id', verifyJWT, verifyInstructor, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await classesCartCollection.findOne(query);
