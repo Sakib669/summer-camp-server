@@ -29,7 +29,7 @@ const verifyJWT = async (req, res, next) => {
 }
 
 
-const uri = "mongodb+srv://summerCapmDB:IoZ1KJ0qPsc1QXUl@cluster0.wdjom0q.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wdjom0q.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -50,6 +50,8 @@ async function run() {
     const classesCollection = client.db('summerCapmDB').collection('classes');
     const paymentsCollection = client.db('summerCapmDB').collection('payments');
     const classesCartCollection = client.db('summerCapmDB').collection('classesCart');
+
+    const popularTeachersCartCollection = client.db('summerCapmDB').collection('popularTeachers');
 
     const verifyStudent = async (req, res, next) => {
       const email = req.decoded.email;
@@ -110,7 +112,7 @@ async function run() {
     })
 
     app.get('/teachers', async (req, res) => {
-      const result = await usersCollection.find({role: {$eq : 'instructor'}}).toArray();
+      const result = await usersCollection.find({ role: { $eq: 'instructor' } }).toArray();
       res.send(result);
     });
 
@@ -125,13 +127,18 @@ async function run() {
 
     // classes api
     app.get('/classes', async (req, res) => {
-      const result = await classesCollection.find({ status: { $eq: 'approved' } }).sort({enrolled: 1}).toArray();
+      const result = await classesCollection.find({ status: { $eq: 'approved' } }).sort({ enrolled: 1 }).toArray();
       res.send(result);
     })
 
     app.get('/classes/banner2', async (req, res) => {
-      const query = {enrolled: {$gt: 5}, status: {$eq : 'approved'}};
-      const result = await classesCollection.find(query).sort({enrolled: 1}).limit(6).toArray();
+      const query = { enrolled: { $gt: 5 }, status: { $eq: 'approved' } };
+      const result = await classesCollection.find(query).sort({ enrolled: 1 }).limit(6).toArray();
+      res.send(result);
+    })
+
+    app.get('/teachers/banner3', async (req, res) => {
+      const result = await popularTeachersCartCollection.find().toArray();
       res.send(result);
     })
 
@@ -178,7 +185,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/classes-cart/:id', verifyJWT, verifyInstructor, async (req, res) => {
+    app.get('/classes-cart/:id', verifyJWT, verifyStudent, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await classesCartCollection.findOne(query);
@@ -248,8 +255,10 @@ async function run() {
       })
     })
 
-    app.get('/payment-details', verifyJWT, async (req, res) => {
-      const result = await paymentsCollection.find().toArray();
+    app.get('/payment-details/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await paymentsCollection.find(query).sort({data: 1}).toArray();
       res.send(result);
     })
 
